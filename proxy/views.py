@@ -1,7 +1,6 @@
-import requests
+import requests, re
 from django.http import HttpResponse
 from django.http import QueryDict
-from request.utils import check_header_validity
 
 def proxy_view(request, url, requests_args=None):
     """
@@ -73,6 +72,54 @@ def proxy_view(request, url, requests_args=None):
         proxy_response[key] = value
 
     return proxy_response
+
+##### From requests library v
+
+class RequestException(IOError):
+    """There was an ambiguous exception that occurred while handling your
+    request.
+    """
+
+    def __init__(self, *args, **kwargs):
+        """Initialize RequestException with `request` and `response` objects."""
+        response = kwargs.pop('response', None)
+        self.response = response
+        self.request = kwargs.pop('request', None)
+        if (response is not None and not self.request and
+                hasattr(response, 'request')):
+            self.request = self.response.request
+        super(RequestException, self).__init__(*args, **kwargs)
+
+
+class InvalidHeader(RequestException, ValueError):
+    """The header value provided was somehow invalid."""
+
+# Moved outside of function to avoid recompile every call
+_CLEAN_HEADER_REGEX_BYTE = re.compile(b'^\\S[^\\r\\n]*$|^$')
+_CLEAN_HEADER_REGEX_STR = re.compile(r'^\S[^\r\n]*$|^$')
+
+
+def check_header_validity(header):
+    """Verifies that header value is a string which doesn't contain
+    leading whitespace or return characters. This prevents unintended
+    header injection.
+
+    :param header: tuple, in the format (name, value).
+    """
+    name, value = header
+
+    if isinstance(value, bytes):
+        pat = _CLEAN_HEADER_REGEX_BYTE
+    else:
+        pat = _CLEAN_HEADER_REGEX_STR
+    try:
+        if not pat.match(value):
+            raise InvalidHeader("Invalid return character or leading space in header: %s" % name)
+    except TypeError:
+        raise InvalidHeader("Value for header {%s: %s} must be of type str or "
+                            "bytes, not %s" % (name, value, type(value)))
+
+##### From requests library ^
 
 
 def get_headers(environ):
