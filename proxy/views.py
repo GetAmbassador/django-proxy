@@ -140,7 +140,7 @@ def get_headers(environ):
             else:
                 # Make header keys case insensitive
                 headers[key.lower()] = value
-        except TypeError as e:
+        except Exception as e:
             # catch type error thrown by check_header_validity method
             # and skip that header as to avoid issues
             pass
