@@ -19,7 +19,7 @@ def proxy_view(request, url, requests_args=None):
         requests_args['headers'] = {}
     else:
         # Make header keys case insensitive
-        requests_args['headers'] = {k.lower():v for k,v in requests_args['headers'].items() if type(v) in (str, bytes, unicode)}
+        requests_args['headers'] = {k.lower():v for k,v in list(requests_args['headers'].items()) if type(v) in (str, bytes, str)}
 
     if 'data' not in requests_args:
         requests_args['data'] = request.body
@@ -66,7 +66,7 @@ def proxy_view(request, url, requests_args=None):
         # should be.
         'content-length',
     ])
-    for key, value in response.headers.items():
+    for key, value in list(response.headers.items()):
         if key.lower() in excluded_headers:
             continue
         proxy_response[key] = value
@@ -128,7 +128,7 @@ def get_headers(environ):
     https://docs.djangoproject.com/en/dev/ref/request-response/#django.http.HttpRequest.META
     """
     headers = {}
-    for key, value in environ.items():
+    for key, value in list(environ.items()):
         try:
             # Check that the key value pair are valid types for the headers
             check_header_validity((key, value))
